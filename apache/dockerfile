@@ -1,0 +1,20 @@
+#dockerfile
+FROM httpd:alpine
+
+ENV TIMEZONE=America/New_York
+ENV WEBSITE_URL=localhost
+
+
+RUN apk --update add --no-cache \
+    tzdata \
+    rm -f /var/cache/apk/*
+
+COPY startup.sh /
+COPY apache.conf /
+
+RUN chmod +x /startup.sh
+
+STOPSIGNAL SIGQUIT
+
+EXPOSE 80
+ENTRYPOINT ["/startup.sh"]

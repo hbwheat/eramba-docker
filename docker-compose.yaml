@@ -1,0 +1,77 @@
+version: '3.3'
+
+services:
+  db:
+    image: mariadb:10
+    container_name: eramba-db
+    restart: unless-stopped
+    volumes:
+      - ./db/dbconfig.conf:/etc/mysql/conf.d/config.conf:ro
+      #- eramba-db-volume:/var/lib/mysql
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      MYSQL_USER: erambadbadmin
+      MYSQL_PASSWORD: eramba_supersecret
+      MYSQL_DATABASE: erambadb
+  
+  php:
+    image: php.app.local:latest
+    container_name: eramba-php
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - eramba-data:/var/www/localhost/htdocs:z
+    environment:
+      - TIMEZONE=America/New_York
+      - WEBSITE_URL=localhost
+      - PHP_MEM_LIMIT=200M
+      - PHP_POST_MAX_SIZE=300M
+      - PHP_FILE_UPLOADS=on
+      - PHP_UPLOAD_MAX_FILESIZE=300M
+      - PHP_MAX_EXECUTION_TIME=300
+      - PHP_ALLOW_URL_FOPEN=on
+      - PHP_MAX_INPUT_VARS=3000
+      - PHP_MAX_INPUT_TIME=600
+      - DB_HOST=db
+      - DB_LOGIN=eramba
+      - DB_PASSWORD=eramaba
+      - DB_DATABASE=erambadb
+      - DB_PREFIX=""
+
+  apache:
+    image: apache.app.local:latest
+    container_name: eramba-apache
+    restart: unless-stopped
+    depends_on:
+      - php
+    volumes:
+      - eramba-data:/var/www/localhost/htdocs:ro
+    environment:
+      - TIMEZONE=America/New_York
+      - WEBSITE_URL=localhosta
+
+  proxy:
+    image: nginx:alpine
+    container_name: eramba-proxy
+    restart: unless-stopped
+    volumes: 
+      - ./proxy/eramba_proxy.conf:/etc/nginx/conf.d/eramba_proxy.conf:ro
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      - apache
+      - php
+      - db
+
+
+
+
+
+#networks:
+  #proxy:
+  #  external: true
+
+volumes:
+  eramba-data:
